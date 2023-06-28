@@ -116,6 +116,7 @@ int main(void)
     printResposta(carga, comprimentos);
 
     fclose(arquivo);
+    free(comprimentos);
     free(carga);
 
     return 0;
