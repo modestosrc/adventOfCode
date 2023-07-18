@@ -5,7 +5,7 @@ int calcPontos(int jogada_oponente, int resultado) {
     int i = jogada_oponente-'A';
     int j = resultado-'X';
 
-    int pontos[3][3] = {
+    static int pontos[3][3] = {
         {0+3, 3+1, 6+2},
         {0+1, 3+2, 6+3},
         {0+2, 3+3, 6+1}
