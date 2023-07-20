@@ -9,91 +9,109 @@ struct Dir {
     std::string nome;
     int tamanhoTotal;
     int tamanhoArquivos;
-    Dir *dirAnterior;
+    std::string dirAnterior;
 
     Dir(std::string nn) :
         nome(nn), 
         tamanhoTotal(0),
         tamanhoArquivos(0),
-        dirAnterior(nullptr)
+        dirAnterior("Nada")
     {
-        std::cout << "Criado: " << nome << std::endl;
     };
 
-    Dir(std::string nn, Dir *da) :
+    Dir(std::string nn, std::string da) :
         nome(nn),
         tamanhoTotal(0),
         tamanhoArquivos(0),
         dirAnterior(da)
         {
-            std::cout << "Criado: " << nome;
-            std::cout << " | Pai: " << da->nome;
-            std::cout << std::endl;
         };
+
 };
+
+std::vector<Dir> dirs;
+
+std::string dirAnterior(std::string atual) {
+    std::string novoDir;
+    for (Dir dir : dirs) {
+        if (dir.nome == atual) {
+            novoDir = dir.dirAnterior;
+            return novoDir;
+        }
+    }
+    return novoDir;
+}
+
+void addValor(std::string dirA, int valor) {
+    std::cout << "Adicionado a: " << dirA << std::endl;
+    if (dirA == "/") {
+        for (Dir &dir : dirs) {
+            if (dir.nome == "/") {
+                dir.tamanhoArquivos += valor;
+                break;
+            }
+        }
+    } else {
+        for (Dir &dir : dirs) {
+            if (dir.nome == dirA) {
+                dir.tamanhoArquivos += valor;
+                addValor(dirAnterior(dirA), valor);
+            }
+        }
+    }
+    return;
+}
+
+void check(std::string dirA) {
+    for (Dir dir : dirs) {
+        if (dir.nome == dirA) {
+            std::cout << dir.nome            << " "
+                      //<< dir.tamanhoTotal    << " "
+                      << dir.tamanhoArquivos << " "
+                      << dir.dirAnterior     << " "
+                      << std::endl;
+        }
+    }
+}
 
 int main() {
     std::ifstream arquivo("input");
-    std::vector<Dir> dirs;
-    Dir *pDir{nullptr};
-    dirs.emplace_back(Dir("/"));
-    pDir = &dirs.back();
-    dirs.emplace_back(Dir("mateus", pDir));
-    pDir = &dirs.back();
-    std::cout << pDir << pDir->nome << pDir->dirAnterior << std::endl;
-    pDir = pDir->dirAnterior;
-    std::cout << pDir << pDir->nome << std::endl;
-
+    std::string dirAtual;
     std::string s;
+
     while (std::getline(arquivo, s)) {
         if (s.at(0) == '$') {
             switch (s.at(2)) {
                 case 'c':
                     s.erase(0, 5);
-                    if (s[0] == '/') break;
+                    if (s[0] == '/') {
+                        dirs.push_back(Dir("/"));
+                        dirAtual = dirs.back().nome;
+                        break;
+                    };
                     if (s[0] == '.') {
-                        //std::cout << pDir->dirAnterior->nome;
-                        pDir = pDir->dirAnterior;
+                        dirAtual = dirAnterior(dirAtual);
                     } else {
-                        for (Dir item : dirs) {
-                            if (item.nome == s) {
-                                pDir = &item;
-                                break;
-                            }
-                        }
-                        dirs.emplace_back(Dir(s, pDir));
-                        pDir = &dirs.back();
+                        dirs.push_back(Dir(s, dirAtual));
+                        dirAtual = dirs.back().nome;
                     }
                     break;
                 case 'l':
                     continue;
-                    break;
                 default:
                     break;
             }
         } else if (std::isdigit(s.at(0))) {
-            std::string token = s.substr(0, s.find(' '));
-            int tamanho = std::stoi(token);
-            pDir->tamanhoArquivos += tamanho;
-            pDir->tamanhoTotal += tamanho;
-            //std::cout << pDir->nome << std::endl;
-            Dir *pDir_tmp = pDir;
-            while (pDir->nome != "/") {
-                //std::cout << pDir->nome << std::endl;
-                pDir->dirAnterior->tamanhoTotal += tamanho;
-                std::cout << "Functionou! " << pDir->dirAnterior->nome << " " << pDir->dirAnterior->tamanhoTotal << std::endl;
-                pDir = pDir->dirAnterior;
-                std::cout << "Functionou! " << pDir->nome << " " << pDir->tamanhoTotal << std::endl;
+            addValor(dirAtual, std::stoi(s.substr(0, s.find(' '))));
             }
-            pDir = pDir_tmp;
-        } else continue;
     }
 
     for (auto item : dirs) {
-        //if (item.nome == "/") continue;
-        std::cout << item.nome << " Tamanho arquivos: " 
-                  << item.tamanhoArquivos << " Tamanho total: " 
-                  << item.tamanhoTotal << " "
-                  << item.dirAnterior->nome << std::endl;
+        std::cout << "Nome: " << item.nome 
+                  << " Tamanho arquivos: " << item.tamanhoArquivos 
+                  //<< " Tamanho total: "  << item.tamanhoTotal << " "
+                  << " Dir Anterior: " << item.dirAnterior << std::endl;
     }
+
+    arquivo.close();
 }
