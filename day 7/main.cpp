@@ -1,27 +1,15 @@
-#include <cctype>
-#include <cstddef>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 
 struct Dir {
-    std::string nome;
-    int tamanhoTotal;
     int tamanhoArquivos;
-    std::string dirAnterior;
-
-    Dir(std::string nn) :
-        nome(nn), 
-        tamanhoTotal(0),
-        tamanhoArquivos(0),
-        dirAnterior("Nada")
-    {
-    };
+    const std::string nome;
+    const std::string dirAnterior;
 
     Dir(std::string nn, std::string da) :
         nome(nn),
-        tamanhoTotal(0),
         tamanhoArquivos(0),
         dirAnterior(da)
         {
@@ -31,87 +19,96 @@ struct Dir {
 
 std::vector<Dir> dirs;
 
-std::string dirAnterior(std::string atual) {
-    std::string novoDir;
+std::string findDirAnterior(const std::string atual) {
     for (Dir dir : dirs) {
         if (dir.nome == atual) {
-            novoDir = dir.dirAnterior;
-            return novoDir;
+            return dir.dirAnterior;
         }
     }
-    return novoDir;
+    return "Isso não deveria acontecer";
 }
 
-void addValor(std::string dirA, int valor) {
-    std::cout << "Adicionado a: " << dirA << std::endl;
+void addValor(const std::string dirA, const int valor) {
+    //std::cout << "Adicionado a: " << dirA << std::endl;
     if (dirA == "/") {
         for (Dir &dir : dirs) {
             if (dir.nome == "/") {
                 dir.tamanhoArquivos += valor;
-                break;
+                return;
             }
         }
     } else {
         for (Dir &dir : dirs) {
-            if (dir.nome == dirA) {
+            if (!dir.nome.compare(dirA)) {
                 dir.tamanhoArquivos += valor;
-                addValor(dirAnterior(dirA), valor);
+                addValor(findDirAnterior(dirA), valor);
+                return;
             }
         }
     }
-    return;
 }
 
-void check(std::string dirA) {
+bool check(std::string dirA) {
     for (Dir dir : dirs) {
         if (dir.nome == dirA) {
-            std::cout << dir.nome            << " "
-                      //<< dir.tamanhoTotal    << " "
-                      << dir.tamanhoArquivos << " "
-                      << dir.dirAnterior     << " "
-                      << std::endl;
+            return false;
         }
     }
+    return true;
 }
 
 int main() {
+    dirs.reserve(200);
     std::ifstream arquivo("input");
-    std::string dirAtual;
+    std::string dirAtual{"root"};
     std::string s;
+
+    int cont{0};
 
     while (std::getline(arquivo, s)) {
         if (s.at(0) == '$') {
             switch (s.at(2)) {
                 case 'c':
                     s.erase(0, 5);
-                    if (s[0] == '/') {
-                        dirs.push_back(Dir("/"));
-                        dirAtual = dirs.back().nome;
-                        break;
-                    };
-                    if (s[0] == '.') {
-                        dirAtual = dirAnterior(dirAtual);
-                    } else {
+                    //if (s[0] == '/') {
+                    //    dirs.push_back(Dir("/"));
+                    //    dirAtual = dirs.back().nome;
+                    //    continue;;
+                    //};
+                    if (s[0] == '.' && s[1] == '.') {
+                        cont++;
+                        dirAtual = findDirAnterior(dirAtual);
+                        continue;
+                    } 
+                    if (check(s)) {
                         dirs.push_back(Dir(s, dirAtual));
                         dirAtual = dirs.back().nome;
+                        continue;
                     }
-                    break;
+                    continue;
                 case 'l':
                     continue;
-                default:
-                    break;
             }
+        } else if (s.at(0) == 'd') {
+            continue;
         } else if (std::isdigit(s.at(0))) {
             addValor(dirAtual, std::stoi(s.substr(0, s.find(' '))));
-            }
+            continue;
+        }
     }
 
-    for (auto item : dirs) {
+    int resposta{0};
+    for (Dir item : dirs) {
+        if (item.tamanhoArquivos <= 100000) {
+            resposta += item.tamanhoArquivos;
+        }
         std::cout << "Nome: " << item.nome 
-                  << " Tamanho arquivos: " << item.tamanhoArquivos 
-                  //<< " Tamanho total: "  << item.tamanhoTotal << " "
-                  << " Dir Anterior: " << item.dirAnterior << std::endl;
+                  << " \tTamanho arquivos: " << item.tamanhoArquivos
+                  << " \tDir Anterior: " << item.dirAnterior 
+                  << std::endl;
     }
+
+    std::cout << cont << " Resposta: " << resposta << std::endl;
 
     arquivo.close();
 }
